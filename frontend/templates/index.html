@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>ENISO Assistant</title>
+    <meta name="description" content="ENISO AI-powered academic assistant — get answers about schedules, exams, internships and more." />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface":               "#101415",
+                        "surface-dim":           "#101415",
+                        "surface-container":     "#1d2022",
+                        "surface-container-low": "#191c1e",
+                        "surface-container-high":"#272a2c",
+                        "surface-container-highest":"#323537",
+                        "surface-bright":        "#363a3b",
+                        "on-surface":            "#e0e3e5",
+                        "on-surface-variant":    "#b9cacb",
+                        "outline":               "#849495",
+                        "outline-variant":       "#3b494b",
+                        "primary-fixed-dim":     "#00dbe9",
+                        "primary-fixed":         "#7df4ff",
+                        "on-primary-fixed":      "#002022",
+                        "primary":               "#dbfcff",
+                        "primary-container":     "#00f0ff",
+                        "on-primary":            "#00363a",
+                        "error":                 "#ffb4ab",
+                        "error-container":       "#93000a",
+                    },
+                    fontFamily: { sans: ["Inter", "sans-serif"] },
+                    fontSize: {
+                        "label-sm":   ["12px", { lineHeight: "1", fontWeight: "700" }],
+                        "label-md":   ["14px", { lineHeight: "1.4", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "headline-xl":["48px", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "200" }],
+                        "headline-md":["24px", { lineHeight: "1.3", fontWeight: "400" }],
+                        "headline-lg":["32px", { lineHeight: "1.2", letterSpacing: "-0.01em", fontWeight: "300" }],
+                        "body-md":    ["16px", { lineHeight: "1.6", fontWeight: "400" }],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-track { background: transparent; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: rgba(0,219,233,0.2); border-radius: 3px; }
+        .chat-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,219,233,0.4); }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes bounceD { 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
+        @keyframes ping { 75%,100%{transform:scale(2);opacity:0} }
+        .msg-in  { animation: fadeUp .3s ease-out; }
+        .dot-anim { animation: bounceD 1.4s infinite ease-in-out both; }
+        .dot-anim:nth-child(1){animation-delay:-.32s}
+        .dot-anim:nth-child(2){animation-delay:-.16s}
+        .ping-anim { animation: ping 1.2s cubic-bezier(0,0,.2,1) infinite; }
+        .nav-active { background: rgba(0,219,233,0.05); border-right: 2px solid #00dbe9; color: #00dbe9; }
+        .prose-chat p { margin-bottom:.5rem; }
+        .prose-chat p:last-child { margin-bottom:0; }
+        .prose-chat pre { background:#0b0f10; padding:.75rem 1rem; border-radius:6px; overflow-x:auto; margin:.5rem 0; }
+        .prose-chat code { font-family:'Courier New',monospace; background:rgba(0,0,0,.3); padding:.1rem .3rem; border-radius:3px; font-size:.85em; }
+        .prose-chat pre code { background:transparent; padding:0; }
+        .prose-chat ul,.prose-chat ol { padding-left:1.25rem; margin:.4rem 0; }
+        .prose-chat li { margin:.2rem 0; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex selection:bg-primary-fixed-dim selection:text-on-primary-fixed">
+
+<div id="app" class="flex w-full h-screen">
+
+    <!-- ══════════════════════════════════════════
+         AUTH SCREEN
+    ══════════════════════════════════════════ -->
+    <div v-if="!isAuthenticated" class="flex items-center justify-center w-full h-full bg-surface relative overflow-hidden">
+        <!-- Ambient blobs -->
+        <div class="absolute w-96 h-96 bg-primary-fixed-dim/5 rounded-full blur-3xl -top-24 -left-24 pointer-events-none"></div>
+        <div class="absolute w-80 h-80 bg-primary-fixed-dim/5 rounded-full blur-3xl -bottom-20 -right-20 pointer-events-none"></div>
+
+        <div class="relative z-10 w-full max-w-sm mx-4">
+            <!-- Logo -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-container border border-outline-variant mb-4 shadow-[0_0_30px_rgba(0,219,233,0.15)]">
+                    <span class="material-symbols-outlined text-primary-fixed-dim text-3xl">school</span>
+                </div>
+                <h1 class="text-headline-lg font-light text-on-surface tracking-tight">ENISO Assistant</h1>
+                <p class="text-sm text-on-surface-variant mt-1">Academic Intelligence Platform</p>
+            </div>
+
+            <!-- Card -->
+            <div class="bg-surface-container border border-outline-variant rounded-2xl p-8 shadow-2xl">
+                <!-- Tabs -->
+                <div class="flex border-b border-outline-variant mb-6">
+                    <button @click="authMode='login'" :class="authMode==='login' ? 'text-primary-fixed-dim border-b-2 border-primary-fixed-dim' : 'text-on-surface-variant'" class="flex-1 pb-3 text-label-md transition-colors">Login</button>
+                    <button @click="authMode='register'" :class="authMode==='register' ? 'text-primary-fixed-dim border-b-2 border-primary-fixed-dim' : 'text-on-surface-variant'" class="flex-1 pb-3 text-label-md transition-colors">Register</button>
+                </div>
+
+                <form @submit.prevent="handleAuth" class="flex flex-col gap-4">
+                    <div>
+                        <label class="block text-label-sm text-on-surface-variant mb-1.5 uppercase tracking-widest">Username</label>
+                        <input type="text" v-model="authForm.username" required placeholder="your_username"
+                            class="w-full px-4 py-3 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface placeholder-on-surface-variant/40 text-sm focus:outline-none focus:border-primary-fixed-dim focus:ring-1 focus:ring-primary-fixed-dim transition-all" />
+                    </div>
+                    <div>
+                        <label class="block text-label-sm text-on-surface-variant mb-1.5 uppercase tracking-widest">Password</label>
+                        <input type="password" v-model="authForm.password" required placeholder="••••••••"
+                            class="w-full px-4 py-3 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface placeholder-on-surface-variant/40 text-sm focus:outline-none focus:border-primary-fixed-dim focus:ring-1 focus:ring-primary-fixed-dim transition-all" />
+                    </div>
+                    <div v-if="authError" class="text-error text-sm text-center py-2 bg-error-container/20 rounded-lg border border-error/20">[[ authError ]]</div>
+                    <button type="submit" :disabled="authLoading"
+                        class="w-full py-3 bg-primary-fixed-dim text-on-primary-fixed font-semibold rounded-lg hover:bg-primary-fixed hover:shadow-[0_0_20px_rgba(0,219,233,0.3)] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide">
+                        <span v-if="authLoading">Processing...</span>
+                        <span v-else>[[ authMode === 'login' ? 'Sign In' : 'Create Account' ]]</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         MAIN APP
+    ══════════════════════════════════════════ -->
+    <template v-else>
+
+        <!-- SIDEBAR -->
+        <nav class="bg-slate-950 w-64 flex-shrink-0 border-r border-slate-800 flex flex-col py-8 fixed left-0 top-0 h-full z-50">
+            <div class="px-6 mb-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-surface-container border border-outline-variant flex items-center justify-center shadow-[0_0_12px_rgba(0,219,233,0.2)]">
+                        <span class="material-symbols-outlined text-primary-fixed-dim text-xl">school</span>
+                    </div>
+                    <div>
+                        <div class="text-primary-fixed-dim text-base font-semibold tracking-tight">ENISO</div>
+                        <div class="text-on-surface-variant text-xs">Academic Control</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nav links -->
+            <div class="flex-1 flex flex-col gap-1 px-3">
+                <a href="#" class="nav-active py-3 px-4 flex items-center gap-3 rounded-lg text-xs uppercase font-bold tracking-widest cursor-pointer transition-all">
+                    <span class="material-symbols-outlined text-lg" style="font-variation-settings:'FILL' 1">chat</span>
+                    <span>Assistant</span>
+                </a>
+                <a v-if="user.is_admin" href="/admin" class="text-slate-500 py-3 px-4 flex items-center gap-3 rounded-lg hover:bg-slate-900 hover:text-slate-200 text-xs uppercase font-bold tracking-widest cursor-pointer transition-all">
+                    <span class="material-symbols-outlined text-lg">admin_panel_settings</span>
+                    <span>Admin Panel</span>
+                </a>
+                <a href="#" class="text-slate-500 py-3 px-4 flex items-center gap-3 rounded-lg hover:bg-slate-900 hover:text-slate-200 text-xs uppercase font-bold tracking-widest cursor-pointer transition-all">
+                    <span class="material-symbols-outlined text-lg">analytics</span>
+                    <span>Analytics</span>
+                </a>
+            </div>
+
+            <!-- User + Logout -->
+            <div class="px-3 mt-auto flex flex-col gap-2">
+                <div class="px-4 py-3 bg-surface-container rounded-lg border border-outline-variant flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-primary-fixed-dim/20 border border-primary-fixed-dim/30 flex items-center justify-center text-primary-fixed-dim text-sm font-bold">
+                        [[ user.username.charAt(0).toUpperCase() ]]
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-medium text-on-surface truncate">[[ user.username ]]</div>
+                        <div class="text-xs text-primary-fixed-dim" v-if="user.is_admin">Admin</div>
+                        <div class="text-xs text-on-surface-variant" v-else>User</div>
+                    </div>
+                </div>
+                <button @click="logout" class="w-full py-2.5 px-4 flex items-center gap-2 text-slate-500 hover:text-slate-200 hover:bg-slate-900 rounded-lg text-xs uppercase font-bold tracking-widest transition-all">
+                    <span class="material-symbols-outlined text-lg">logout</span>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- MAIN CANVAS -->
+        <div class="flex-1 flex flex-col min-w-0 pl-64 h-screen">
+
+            <!-- TOP BAR -->
+            <header class="bg-slate-950/80 backdrop-blur-md border-b border-slate-800 flex justify-between items-center h-16 px-6 sticky top-0 z-40">
+                <div class="text-xl font-black tracking-tighter text-primary-fixed-dim">Academia OS</div>
+                <div class="flex items-center gap-3">
+                    <!-- Live indicator -->
+                    <div class="flex items-center gap-2">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <span class="ping-anim absolute inline-flex h-full w-full rounded-full bg-primary-fixed-dim opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary-fixed-dim shadow-[0_0_8px_rgba(0,219,233,0.8)]"></span>
+                        </span>
+                        <span class="text-xs text-primary-fixed-dim font-bold uppercase tracking-widest hidden sm:block">Live</span>
+                    </div>
+                    <button @click="clearChat" class="text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 transition-all p-2 rounded-full active:scale-95" title="Clear chat">
+                        <span class="material-symbols-outlined text-lg">delete_sweep</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- CHAT AREA -->
+            <main class="flex-1 flex flex-col overflow-hidden bg-surface">
+                <!-- Messages -->
+                <div ref="chatBox" class="flex-1 overflow-y-auto chat-scroll p-6 flex flex-col gap-4">
+                    <!-- Welcome card (shown when no messages) -->
+                    <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full gap-6">
+                        <div class="w-20 h-20 rounded-full bg-surface-container border border-outline-variant flex items-center justify-center shadow-[0_0_40px_rgba(0,219,233,0.1)]">
+                            <span class="material-symbols-outlined text-4xl text-primary-fixed-dim" style="font-variation-settings:'FILL' 1">school</span>
+                        </div>
+                        <div class="text-center">
+                            <h2 class="text-headline-md text-on-surface font-light mb-2">How can I help you today?</h2>
+                            <p class="text-sm text-on-surface-variant">Ask me anything about ENISO — schedules, exams, internships, PFE...</p>
+                        </div>
+                        <!-- Quick questions grid -->
+                        <div class="grid grid-cols-2 gap-3 max-w-xl w-full mt-2">
+                            <button v-for="(q, label) in quickQuestions" :key="label" @click="askQuestion(q)"
+                                class="text-left p-4 bg-surface-container border border-outline-variant rounded-xl hover:border-primary-fixed-dim/50 hover:bg-surface-container-high hover:shadow-[0_0_12px_rgba(0,219,233,0.08)] transition-all group">
+                                <div class="text-sm font-semibold text-on-surface group-hover:text-primary-fixed-dim transition-colors">[[ label ]]</div>
+                                <div class="text-xs text-on-surface-variant mt-1 line-clamp-2">[[ q ]]</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div v-for="(msg, i) in messages" :key="i" class="msg-in flex gap-3" :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'">
+                        <!-- Avatar -->
+                        <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border"
+                            :class="msg.role === 'user'
+                                ? 'bg-primary-fixed-dim/20 border-primary-fixed-dim/30 text-primary-fixed-dim'
+                                : 'bg-surface-container border-outline-variant text-on-surface-variant'">
+                            <span class="material-symbols-outlined text-lg" style="font-variation-settings:'FILL' 1">
+                                [[ msg.role === 'user' ? 'person' : 'school' ]]
+                            </span>
+                        </div>
+                        <!-- Bubble -->
+                        <div class="max-w-2xl">
+                            <div class="px-4 py-3 rounded-2xl text-sm leading-relaxed prose-chat"
+                                :class="msg.role === 'user'
+                                    ? 'bg-primary-fixed-dim text-on-primary-fixed rounded-tr-sm'
+                                    : 'bg-surface-container border border-outline-variant text-on-surface rounded-tl-sm'"
+                                v-html="renderMarkdown(msg.content)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading indicator -->
+                    <div v-if="chatLoading" class="msg-in flex gap-3">
+                        <div class="flex-shrink-0 w-9 h-9 rounded-full bg-surface-container border border-outline-variant flex items-center justify-center">
+                            <span class="material-symbols-outlined text-lg text-on-surface-variant" style="font-variation-settings:'FILL' 1">school</span>
+                        </div>
+                        <div class="px-4 py-4 bg-surface-container border border-outline-variant rounded-2xl rounded-tl-sm flex gap-1.5">
+                            <div class="dot-anim w-2 h-2 bg-primary-fixed-dim rounded-full"></div>
+                            <div class="dot-anim w-2 h-2 bg-primary-fixed-dim rounded-full"></div>
+                            <div class="dot-anim w-2 h-2 bg-primary-fixed-dim rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INPUT BAR -->
+                <div class="p-4 border-t border-outline-variant bg-surface-container-low">
+                    <form @submit.prevent="sendMessage" class="flex items-center gap-3 bg-surface-container border border-outline-variant rounded-2xl px-4 py-2 focus-within:border-primary-fixed-dim focus-within:ring-1 focus-within:ring-primary-fixed-dim transition-all max-w-4xl mx-auto">
+                        <span class="material-symbols-outlined text-on-surface-variant text-xl">edit</span>
+                        <input type="text" v-model="newMessage" :disabled="chatLoading"
+                            placeholder="Ask about ENISO schedules, exams, internships..."
+                            class="flex-1 bg-transparent border-none outline-none text-on-surface placeholder-on-surface-variant/50 text-sm py-1.5 focus:ring-0" />
+                        <button type="submit" :disabled="!newMessage.trim() || chatLoading"
+                            class="w-9 h-9 flex items-center justify-center rounded-full bg-primary-fixed-dim text-on-primary-fixed hover:bg-primary-fixed hover:shadow-[0_0_12px_rgba(0,219,233,0.4)] active:scale-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
+                            <span class="material-symbols-outlined text-lg" style="font-variation-settings:'FILL' 1">send</span>
+                        </button>
+                    </form>
+                    <p class="text-center text-xs text-on-surface-variant/40 mt-2">Powered by OpenRouter · Qwen 2.5 72B</p>
+                </div>
+            </main>
+        </div>
+    </template>
+</div>
+
+<script>
+const { createApp, ref, reactive, onMounted, nextTick } = Vue;
+const API_URL = "http://127.0.0.1:8000";
+
+createApp({
+    delimiters: ['[[', ']]'],
+    setup() {
+        const isAuthenticated = ref(false);
+        const authMode = ref('login');
+        const authLoading = ref(false);
+        const authError = ref('');
+        const authForm = reactive({ username: '', password: '' });
+        const user = reactive({ username: '', is_admin: false });
+        const messages = ref([]);
+        const newMessage = ref('');
+        const chatLoading = ref(false);
+        const chatBox = ref(null);
+
+        const quickQuestions = {
+            "📅 Emploi du Temps": "Quel est l'emploi du temps du groupe G1 ?",
+            "📝 Examens DS": "Quelles sont les dates des examens DS ?",
+            "🏢 Stages": "Comment faire un stage d'été ?",
+            "🎓 PFE": "Quels sont les sujets PFE disponibles ?",
+            "📋 Inscription": "Quelles sont les procédures d'inscription ?",
+            "🏛️ À propos ENISO": "Quelles sont les spécialités proposées à l'ENISO ?"
+        };
+
+        onMounted(() => {
+            const token = localStorage.getItem('eniso_token');
+            if (token) fetchUserInfo(token);
+        });
+
+        const scrollToBottom = () => nextTick(() => {
+            if (chatBox.value) chatBox.value.scrollTop = chatBox.value.scrollHeight;
+        });
+
+        const renderMarkdown = (text) => text ? marked.parse(text) : '';
+
+        const handleAuth = async () => {
+            authLoading.value = true;
+            authError.value = '';
+            const endpoint = authMode.value === 'login' ? '/api/auth/login' : '/api/auth/register';
+            try {
+                const res = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(authForm)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('eniso_token', data.access_token);
+                    await fetchUserInfo(data.access_token);
+                    authForm.username = ''; authForm.password = '';
+                } else {
+                    authError.value = data.detail || 'Authentication failed';
+                }
+            } catch { authError.value = 'Cannot connect to server'; }
+            finally { authLoading.value = false; }
+        };
+
+        const fetchUserInfo = async (token) => {
+            try {
+                const res = await fetch(`${API_URL}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+                if (res.ok) {
+                    const d = await res.json();
+                    user.username = d.username; user.is_admin = d.is_admin;
+                    isAuthenticated.value = true;
+                } else { logout(); }
+            } catch { logout(); }
+        };
+
+        const logout = () => {
+            localStorage.removeItem('eniso_token');
+            isAuthenticated.value = false;
+            messages.value = []; user.username = ''; user.is_admin = false;
+        };
+
+        const clearChat = () => { messages.value = []; };
+
+        const askQuestion = (q) => { newMessage.value = q; sendMessage(); };
+
+        const sendMessage = async () => {
+            if (!newMessage.value.trim()) return;
+            const text = newMessage.value;
+            messages.value.push({ role: 'user', content: text });
+            newMessage.value = '';
+            chatLoading.value = true;
+            scrollToBottom();
+            try {
+                const token = localStorage.getItem('eniso_token');
+                const res = await fetch(`${API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await res.json();
+                messages.value.push({ role: 'assistant', content: res.ok ? data.response : `**Error**: ${data.detail || 'Failed'}` });
+            } catch { messages.value.push({ role: 'assistant', content: '**Error**: Could not connect to the server.' }); }
+            finally { chatLoading.value = false; scrollToBottom(); }
+        };
+
+        return {
+            isAuthenticated, authMode, authLoading, authError, authForm, user,
+            handleAuth, logout, clearChat,
+            messages, newMessage, chatLoading, chatBox, sendMessage, askQuestion,
+            quickQuestions, renderMarkdown
+        };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
