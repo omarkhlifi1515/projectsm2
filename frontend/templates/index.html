@@ -4,7 +4,8 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>ENISO Assistant</title>
-    <meta name="description" content="ENISO AI-powered academic assistant — get answers about schedules, exams, internships and more." />
+    <meta name="description" content="ENISO academic assistant — get answers about schedules, exams, internships and more." />
+    <meta name="api-base-url" content="{{ api_base_url }}" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -77,9 +78,6 @@
 
 <div id="app" class="flex w-full h-screen">
 
-    <!-- ══════════════════════════════════════════
-         AUTH SCREEN
-    ══════════════════════════════════════════ -->
     <div v-if="!isAuthenticated" class="flex items-center justify-center w-full h-full bg-surface relative overflow-hidden">
         <!-- Ambient blobs -->
         <div class="absolute w-96 h-96 bg-primary-fixed-dim/5 rounded-full blur-3xl -top-24 -left-24 pointer-events-none"></div>
@@ -125,9 +123,6 @@
         </div>
     </div>
 
-    <!-- ══════════════════════════════════════════
-         MAIN APP
-    ══════════════════════════════════════════ -->
     <template v-else>
 
         <!-- SIDEBAR -->
@@ -138,8 +133,8 @@
                         <span class="material-symbols-outlined text-primary-fixed-dim text-xl">school</span>
                     </div>
                     <div>
-                        <div class="text-primary-fixed-dim text-base font-semibold tracking-tight">ENISO</div>
-                        <div class="text-on-surface-variant text-xs">Academic Control</div>
+                        <div class="text-primary-fixed-dim text-base font-semibold tracking-tight">ENISO Assistant</div>
+                        <div class="text-on-surface-variant text-xs">Student & Academic Support</div>
                     </div>
                 </div>
             </div>
@@ -184,7 +179,7 @@
 
             <!-- TOP BAR -->
             <header class="bg-slate-950/80 backdrop-blur-md border-b border-slate-800 flex justify-between items-center h-16 px-6 sticky top-0 z-40">
-                <div class="text-xl font-black tracking-tighter text-primary-fixed-dim">Academia OS</div>
+                <div class="text-xl font-black tracking-tighter text-primary-fixed-dim">ENISO Assistant</div>
                 <div class="flex items-center gap-3">
                     <!-- Live indicator -->
                     <div class="flex items-center gap-2">
@@ -270,7 +265,7 @@
                             <span class="material-symbols-outlined text-lg" style="font-variation-settings:'FILL' 1">send</span>
                         </button>
                     </form>
-                    <p class="text-center text-xs text-on-surface-variant/40 mt-2">Powered by OpenRouter · Qwen 2.5 72B</p>
+                    <p class="text-center text-xs text-on-surface-variant/40 mt-2">Secure knowledge-based assistant</p>
                 </div>
             </main>
         </div>
@@ -279,7 +274,13 @@
 
 <script>
 const { createApp, ref, reactive, onMounted, nextTick } = Vue;
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = (() => {
+    const meta = document.querySelector('meta[name="api-base-url"]');
+    const fromServer = meta?.getAttribute('content')?.trim();
+    if (fromServer) return fromServer;
+    const { protocol, hostname } = window.location;
+    return `${protocol}//${hostname}:8000`;
+})();
 
 createApp({
     delimiters: ['[[', ']]'],
@@ -296,12 +297,12 @@ createApp({
         const chatBox = ref(null);
 
         const quickQuestions = {
-            "📅 Emploi du Temps": "Quel est l'emploi du temps du groupe G1 ?",
-            "📝 Examens DS": "Quelles sont les dates des examens DS ?",
-            "🏢 Stages": "Comment faire un stage d'été ?",
-            "🎓 PFE": "Quels sont les sujets PFE disponibles ?",
-            "📋 Inscription": "Quelles sont les procédures d'inscription ?",
-            "🏛️ À propos ENISO": "Quelles sont les spécialités proposées à l'ENISO ?"
+            "Timetable": "Quel est l'emploi du temps du groupe G1 ?",
+            "Assessments": "Quelles sont les dates des examens DS ?",
+            "Internships": "Comment faire un stage d'été ?",
+            "Final Project": "Quels sont les sujets PFE disponibles ?",
+            "Registration": "Quelles sont les procédures d'inscription ?",
+            "About ENISO": "Quelles sont les spécialités proposées à l'ENISO ?"
         };
 
         onMounted(() => {
