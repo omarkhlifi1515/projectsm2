@@ -19,7 +19,7 @@ retriever = vectorstore.as_retriever(search_kwargs={"k": 15})
 
 DEFAULT_LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1")
 DEFAULT_LLM_MODEL = os.environ.get("LLM_MODEL", "qwen/qwen-2.5-72b-instruct")
-DEFAULT_LLM_API_KEY = os.environ.get("LLM_API_KEY", "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")
+DEFAULT_LLM_API_KEY = os.environ.get("LLM_API_KEY", "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")
 
 def process_and_store_document(file_bytes: bytes, filename: str):
     """Parses a PDF or TXT file, splits it into chunks, and stores in ChromaDB."""
