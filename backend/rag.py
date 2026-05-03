@@ -15,11 +15,11 @@ embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-
 
 # Initialize ChromaDB vector store
 vectorstore = Chroma(persist_directory=CHROMA_PERSIST_DIR, embedding_function=embeddings)
-retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
+retriever = vectorstore.as_retriever(search_kwargs={"k": 15})
 
-DEFAULT_LLM_BASE_URL = "https://api.groq.com/openai/v1"
-DEFAULT_LLM_MODEL = "llama-3.1-8b-instant"
-DEFAULT_LLM_API_KEY = "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"
+DEFAULT_LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1")
+DEFAULT_LLM_MODEL = os.environ.get("LLM_MODEL", "qwen/qwen-2.5-72b-instruct")
+DEFAULT_LLM_API_KEY = os.environ.get("LLM_API_KEY", "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")
 
 def process_and_store_document(file_bytes: bytes, filename: str):
     """Parses a PDF or TXT file, splits it into chunks, and stores in ChromaDB."""
@@ -54,10 +54,13 @@ def _get_setting(db, key: str) -> str:
 
 def call_llm(prompt: str, *, db=None) -> str:
     """Calls the configured LLM gateway (admin-configured or env fallback)."""
-    # Hardcode strictly to Groq, ignoring the database
-    api_key = DEFAULT_LLM_API_KEY
-    base_url = DEFAULT_LLM_BASE_URL
-    model = DEFAULT_LLM_MODEL
+    api_key = _get_setting(db, "llm_api_key") if db is not None else ""
+    base_url = _get_setting(db, "llm_base_url") if db is not None else ""
+    model = _get_setting(db, "llm_model") if db is not None else ""
+
+    api_key = api_key or DEFAULT_LLM_API_KEY
+    base_url = base_url or DEFAULT_LLM_BASE_URL
+    model = model or DEFAULT_LLM_MODEL
     
     if not api_key:
         raise RuntimeError("LLM is not configured. Ask an admin to set an API key in Admin Console → Settings.")
