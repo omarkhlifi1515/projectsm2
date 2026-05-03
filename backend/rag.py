@@ -50,7 +50,7 @@ def call_openrouter(prompt: str) -> str:
         "X-Title": "ENISO Assistant", # Optional
     }
     data = {
-        "model": "qwen/qwen-2.5-72b-instruct", # A solid free/cheap model, can be changed
+        "model": "meta-llama/llama-3.1-8b-instruct:free", # Free tier model, no credits needed
         "messages": [
             {"role": "user", "content": prompt}
         ]
