@@ -19,7 +19,7 @@ retriever = vectorstore.as_retriever(search_kwargs={"k": 15})
 
 DEFAULT_LLM_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_LLM_MODEL = "qwen/qwen-2.5-72b-instruct"
-DEFAULT_LLM_API_KEY = "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"
+DEFAULT_LLM_API_KEY = "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"
 
 def process_and_store_document(file_bytes: bytes, filename: str):
     """Parses a PDF or TXT file, splits it into chunks, and stores in ChromaDB."""
