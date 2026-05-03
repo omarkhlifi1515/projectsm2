@@ -17,9 +17,9 @@ embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-
 vectorstore = Chroma(persist_directory=CHROMA_PERSIST_DIR, embedding_function=embeddings)
 retriever = vectorstore.as_retriever(search_kwargs={"k": 15})
 
-DEFAULT_LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1")
-DEFAULT_LLM_MODEL = os.environ.get("LLM_MODEL", "meta-llama/llama-3.1-8b-instruct:free")
-DEFAULT_LLM_API_KEY = os.environ.get("LLM_API_KEY", "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")
+DEFAULT_LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1")
+DEFAULT_LLM_MODEL = os.environ.get("LLM_MODEL", "llama-3.1-8b-instant")
+DEFAULT_LLM_API_KEY = os.environ.get("LLM_API_KEY", "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")
 
 def process_and_store_document(file_bytes: bytes, filename: str):
     """Parses a PDF or TXT file, splits it into chunks, and stores in ChromaDB."""
