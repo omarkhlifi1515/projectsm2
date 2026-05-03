@@ -18,7 +18,7 @@ vectorstore = Chroma(persist_directory=CHROMA_PERSIST_DIR, embedding_function=em
 retriever = vectorstore.as_retriever(search_kwargs={"k": 15})
 
 DEFAULT_LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1")
-DEFAULT_LLM_MODEL = os.environ.get("LLM_MODEL", "qwen/qwen-2.5-72b-instruct")
+DEFAULT_LLM_MODEL = os.environ.get("LLM_MODEL", "meta-llama/llama-3.1-8b-instruct:free")
 DEFAULT_LLM_API_KEY = os.environ.get("LLM_API_KEY", "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")
 
 def process_and_store_document(file_bytes: bytes, filename: str):
