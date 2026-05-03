@@ -26,3 +26,8 @@ class Document(Base):
     chunks_added = Column(Integer, default=0)
     uploaded_by = Column(Integer)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Setting(Base):
+    __tablename__ = "settings"
+    key = Column(String, primary_key=True, index=True)
+    value = Column(Text, default="")

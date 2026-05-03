@@ -107,7 +107,7 @@ spacing:
 
 This design system establishes a visual language of academic authority and precision for the ENISO Assistant. It moves away from the ephemeral nature of modern SaaS trends, instead grounding the user experience in the permanence of a digital library or a high-end research institution.
 
-The style is a hybrid of **Minimalism** and **Tactile** design. It utilizes heavy whitespace to allow complex information to breathe, while employing subtle physical metaphors—like grain textures and paper-thin strokes—to evoke the feeling of high-quality parchment and scholarly journals. The brand personality is unapologetically sophisticated, catering to researchers and academics who value meticulous detail and trustworthy AI assistance.
+The style is a hybrid of **Minimalism** and **Tactile** design. It utilizes heavy whitespace to allow complex information to breathe, while employing subtle physical metaphors—like grain textures and paper-thin strokes—to evoke the feeling of high-quality parchment and scholarly journals. The brand personality is unapologetically sophisticated, catering to researchers and academics who value meticulous detail and trustworthy assistance.
 
 ## Colors
 
@@ -122,7 +122,7 @@ The palette is anchored by a deep, monochromatic base to minimize eye strain dur
 
 The typographic system relies on the interplay between tradition and utility. 
 
-**Newsreader** serves as the voice of authority. It is used for headlines, block quotes, and editorial moments. Its varied stroke widths and classical serifs lend a "published" feel to AI-generated insights.
+**Newsreader** serves as the voice of authority. It is used for headlines, block quotes, and editorial moments. Its varied stroke widths and classical serifs lend a "published" feel to long-form insights.
 
 **Inter** handles the heavy lifting of the UI. It provides maximum legibility for chat logs, data tables, and input fields. Technical content (like citations or metadata) should use the `label-caps` style to create a distinct hierarchy between the core content and the supporting data.
 
@@ -158,5 +158,5 @@ The shape language is "Architectural"—meaning corners are present but softened
 - **Scholarly Inputs:** Input fields are defined by a bottom border only (0.5px Ivory) when inactive, turning into a full 4px-radius box when focused.
 - **Citations & Footnotes:** Small Inter caps text with a subtle Academic Gold highlight on hover. These should appear in the "marginalia" (the right gutter of the layout).
 - **Cards:** No background color; defined by a 0.5px Ivory border at low opacity. This keeps the layout airy and focused on the text.
-- **Chat Bubbles:** Eschew the "bubble" look. Use "blocks" of text separated by vertical dividers or subtle indentations, mimicking the structure of a dialogue in a play or a scripted manuscript.
+- **Chat Blocks:** Eschew the "bubble" look. Use "blocks" of text separated by vertical dividers or subtle indentations, mimicking the structure of a dialogue in a play or a scripted manuscript.
 - **Micro-interactions:** Transitions should be fast (150ms-200ms) with a linear-out-slow-in easing curve. Elements shouldn't "bounce"; they should click into place with mechanical precision.

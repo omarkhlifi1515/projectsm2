@@ -9,7 +9,6 @@ import requests
 import re
 
 CHROMA_PERSIST_DIR = "./chroma_db_v3"
-OPENROUTER_API_KEY = "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"
 
 # Initialize local embeddings
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
@@ -17,6 +16,10 @@ embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-
 # Initialize ChromaDB vector store
 vectorstore = Chroma(persist_directory=CHROMA_PERSIST_DIR, embedding_function=embeddings)
 retriever = vectorstore.as_retriever(search_kwargs={"k": 15})
+
+DEFAULT_LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1")
+DEFAULT_LLM_MODEL = os.environ.get("LLM_MODEL", "qwen/qwen-2.5-72b-instruct")
+DEFAULT_LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
 
 def process_and_store_document(file_bytes: bytes, filename: str):
     """Parses a PDF or TXT file, splits it into chunks, and stores in ChromaDB."""
@@ -41,28 +44,50 @@ def process_and_store_document(file_bytes: bytes, filename: str):
         vectorstore.persist()
     return len(splits)
 
-def call_openrouter(prompt: str) -> str:
-    """Calls OpenRouter API natively."""
+def _get_setting(db, key: str) -> str:
+    try:
+        from models import Setting
+        row = db.query(Setting).filter(Setting.key == key).first()
+        return (row.value if row and row.value is not None else "").strip()
+    except Exception:
+        return ""
+
+def call_llm(prompt: str, *, db=None) -> str:
+    """Calls the configured LLM gateway (admin-configured or env fallback)."""
+    api_key = _get_setting(db, "llm_api_key") if db is not None else ""
+    base_url = _get_setting(db, "llm_base_url") if db is not None else ""
+    model = _get_setting(db, "llm_model") if db is not None else ""
+
+    api_key = api_key or DEFAULT_LLM_API_KEY
+    base_url = base_url or DEFAULT_LLM_BASE_URL
+    model = model or DEFAULT_LLM_MODEL
+
+    if not api_key:
+        raise RuntimeError("LLM is not configured. Ask an admin to set an API key in Admin Console → Settings.")
+
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:8000", # Required by OpenRouter
-        "X-Title": "ENISO Assistant", # Optional
     }
     data = {
+<<<<<<< HEAD
         "model": "meta-llama/llama-3.1-8b-instruct:free", # Free tier model, no credits needed
+=======
+        "model": model,
+>>>>>>> 0d8b916be8d841b493e2e8055af3144fdfb704a6
         "messages": [
             {"role": "user", "content": prompt}
         ]
     }
     
-    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data, timeout=120)
+    url = base_url.rstrip("/") + "/chat/completions"
+    response = requests.post(url, headers=headers, json=data, timeout=120)
     response.raise_for_status()
     res_json = response.json()
     return res_json['choices'][0]['message']['content']
 
-def generate_rag_response(user_message: str) -> str:
-    """Retrieves context and asks OpenRouter."""
+def generate_rag_response(user_message: str, *, db=None) -> str:
+    """Retrieves context and asks the configured LLM gateway."""
     docs = retriever.invoke(user_message)
     context = "\n\n".join(doc.page_content for doc in docs)
     
@@ -77,4 +102,4 @@ def generate_rag_response(user_message: str) -> str:
 
     Answer:"""
     
-    return call_openrouter(prompt)
+    return call_llm(prompt, db=db)

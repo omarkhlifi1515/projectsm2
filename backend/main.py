@@ -10,12 +10,36 @@ models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="ENISO Assistant API", version="3.0.0")
 
+DEFAULT_ADMIN_USERNAME = "sameh"
+DEFAULT_ADMIN_PASSWORD = "lasmih"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── Bootstrap: default admin ──────────────────────────────────────────────────
+@app.on_event("startup")
+def ensure_default_admin():
+    db = database.SessionLocal()
+    try:
+        user = db.query(models.User).filter(models.User.username == DEFAULT_ADMIN_USERNAME).first()
+        if not user:
+            hashed = auth.get_password_hash(DEFAULT_ADMIN_PASSWORD)
+            user = models.User(
+                username=DEFAULT_ADMIN_USERNAME,
+                hashed_password=hashed,
+                is_admin=True,
+            )
+            db.add(user)
+            db.commit()
+        elif not user.is_admin:
+            user.is_admin = True
+            db.commit()
+    finally:
+        db.close()
 
 # ─── Schemas ──────────────────────────────────────────────────────────────────
 class UserCreate(BaseModel):
@@ -35,6 +59,11 @@ class ChatResponse(BaseModel):
 
 class RatingUpdate(BaseModel):
     rating: int  # -1, 0, or 1
+
+class SettingsUpdate(BaseModel):
+    llm_base_url: Optional[str] = None
+    llm_model: Optional[str] = None
+    llm_api_key: Optional[str] = None
 
 # ─── Health ───────────────────────────────────────────────────────────────────
 @app.get("/health")
@@ -69,7 +98,7 @@ def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(request_data: ChatRequest, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(database.get_db)):
     try:
-        response_text = rag.generate_rag_response(request_data.message)
+        response_text = rag.generate_rag_response(request_data.message, db=db)
         log = models.ChatLog(user_id=current_user.id, message=request_data.message, response=response_text)
         db.add(log); db.commit(); db.refresh(log)
         return ChatResponse(response=response_text, log_id=log.id)
@@ -214,3 +243,40 @@ def delete_document(doc_id: int, current_user: models.User = Depends(auth.requir
         raise HTTPException(status_code=404, detail="Document not found")
     db.delete(doc); db.commit()
     return {"status": "deleted", "doc_id": doc_id}
+
+# ─── Admin: Settings ───────────────────────────────────────────────────────────
+@app.get("/api/admin/settings")
+def get_settings(current_user: models.User = Depends(auth.require_admin), db: Session = Depends(database.get_db)):
+    rows = db.query(models.Setting).all()
+    data = {r.key: (r.value or "") for r in rows}
+    # Never return secrets in full
+    masked_key = data.get("llm_api_key", "")
+    if masked_key:
+        data["llm_api_key"] = ("*" * 12) + masked_key[-4:]
+    return {
+        "llm_base_url": data.get("llm_base_url", ""),
+        "llm_model": data.get("llm_model", ""),
+        "llm_api_key": data.get("llm_api_key", ""),
+        "has_llm_api_key": bool(rows and any(r.key == "llm_api_key" and (r.value or "").strip() for r in rows)),
+    }
+
+@app.put("/api/admin/settings")
+def update_settings(payload: SettingsUpdate, current_user: models.User = Depends(auth.require_admin), db: Session = Depends(database.get_db)):
+    def upsert(key: str, value: Optional[str]):
+        if value is None:
+            return
+        row = db.query(models.Setting).filter(models.Setting.key == key).first()
+        if not row:
+            row = models.Setting(key=key, value=value)
+            db.add(row)
+        else:
+            row.value = value
+
+    upsert("llm_base_url", (payload.llm_base_url or "").strip())
+    upsert("llm_model", (payload.llm_model or "").strip())
+    # Only update key if admin explicitly provides a non-empty value
+    if payload.llm_api_key is not None and payload.llm_api_key.strip():
+        upsert("llm_api_key", payload.llm_api_key.strip())
+
+    db.commit()
+    return {"status": "ok"}
