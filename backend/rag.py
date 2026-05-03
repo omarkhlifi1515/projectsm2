@@ -54,14 +54,11 @@ def _get_setting(db, key: str) -> str:
 
 def call_llm(prompt: str, *, db=None) -> str:
     """Calls the configured LLM gateway (admin-configured or env fallback)."""
-    api_key = _get_setting(db, "llm_api_key") if db is not None else ""
-    base_url = _get_setting(db, "llm_base_url") if db is not None else ""
-    model = _get_setting(db, "llm_model") if db is not None else ""
-
-    api_key = api_key or DEFAULT_LLM_API_KEY
-    base_url = base_url or DEFAULT_LLM_BASE_URL
-    model = model or DEFAULT_LLM_MODEL
-
+    # Hardcode strictly to Groq, ignoring the database
+    api_key = DEFAULT_LLM_API_KEY
+    base_url = DEFAULT_LLM_BASE_URL
+    model = DEFAULT_LLM_MODEL
+    
     if not api_key:
         raise RuntimeError("LLM is not configured. Ask an admin to set an API key in Admin Console → Settings.")
 
