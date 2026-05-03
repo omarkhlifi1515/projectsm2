@@ -15,7 +15,7 @@ embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-
 
 # Initialize ChromaDB vector store
 vectorstore = Chroma(persist_directory=CHROMA_PERSIST_DIR, embedding_function=embeddings)
-retriever = vectorstore.as_retriever(search_kwargs={"k": 15})
+retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
 
 DEFAULT_LLM_BASE_URL = "https://api.groq.com/openai/v1"
 DEFAULT_LLM_MODEL = "llama-3.1-8b-instant"
